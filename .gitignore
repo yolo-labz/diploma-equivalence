@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Rust
+target/
+*.rs.bk
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tools
+*.swp
+*.swo
+
+# Data (large files, audio, PDFs)
+*.pdf
+*.ogg
+*.ogx
+*.mp3
+*.wav
+/tmp/
+/data/
+
+# Research ementas (symlinked from vault)
+/research/ementas/

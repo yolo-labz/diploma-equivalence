@@ -1,0 +1,11 @@
+[package]
+name = "match-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Core match computation engine for diploma equivalence: distance calculations, vector ops, ranking"
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+tracing.workspace = true

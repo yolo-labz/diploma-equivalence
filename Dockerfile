@@ -1,0 +1,48 @@
+# Diploma Equivalence — Automation Service
+# Brazil-Portugal course unit to discipline matching.
+
+FROM python:3.12-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:0.9.2 /uv /usr/local/bin/uv
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app/.venv
+
+WORKDIR /app
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-dev --no-install-project
+
+COPY . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --create-home --uid 1001 app
+
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/src /app/src
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1
+
+USER app
+WORKDIR /app
+EXPOSE 5000
+
+CMD ["uvicorn", "diploma_equivalence.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "5000"]

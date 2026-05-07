@@ -1,0 +1,123 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "diploma-equivalence"
+version = "0.1.0"
+description = "Brazil-Portugal diploma equivalence automation: scrape, embed, match, and explain course-unit-to-discipline mappings"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+authors = [
+    { name = "Pedro H S Balbino", email = "pedro@yolo.dev" },
+]
+keywords = [
+    "diploma-equivalence",
+    "embeddings",
+    "semantic-search",
+    "education",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Rust",
+]
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.34,<1",
+    "httpx>=0.28,<1",
+    "beautifulsoup4>=4.13,<5",
+    "pydantic>=2.11,<3",
+    "pydantic-settings>=2.8,<3",
+    "structlog>=25,<26",
+    "sentence-transformers>=3.4,<4",
+    "psycopg[binary]>=3.2,<4",
+    "pgvector>=0.4,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<9",
+    "pytest-cov>=6,<7",
+    "pytest-asyncio>=0.26,<1",
+    "ruff>=0.12,<1",
+    "pyright>=1.1.400,<2",
+    "httpx-sse>=0.4,<1",
+]
+
+[project.scripts]
+diploma-ingest = "diploma_equivalence.infrastructure.ingest.scrape_uc_ementas:main"
+diploma-embed = "diploma_equivalence.application.embed.cli:main"
+diploma-match = "diploma_equivalence.application.match.cli:main"
+diploma-serve = "diploma_equivalence.main:main"
+
+[project.urls]
+Homepage = "https://github.com/yolo-labz/diploma-equivalence"
+Repository = "https://github.com/yolo-labz/diploma-equivalence"
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<9",
+    "pytest-cov>=6,<7",
+    "pytest-asyncio>=0.26,<1",
+    "ruff>=0.12,<1",
+    "pyright>=1.1.400,<2",
+    "httpx-sse>=0.4,<1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "UP",  # pyupgrade
+    "TCH", # flake8-type-checking
+    "C4",  # flake8-comprehensions
+    "RUF", # ruff-specific
+]
+ignore = [
+    "E501",  # line-too-long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+
+[tool.ruff.lint.isort]
+force-single-line = false
+combine-as-imports = true
+known-first-party = ["diploma_equivalence"]
+
+[tool.ruff.lint.per-file-ignores]
+# EN DASH (–) used deliberately to match source data in scrapers/parsers.
+"src/diploma_equivalence/infrastructure/ingest/*.py" = ["RUF001", "RUF003"]
+
+[tool.pyright]
+typeCheckingMode = "basic"
+pythonVersion = "3.12"
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportPrivateUsage = false
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+markers = [
+    "integration: integration tests (slow, requires external services)",
+    "embed: tests that require sentence-transformers model download",
+]

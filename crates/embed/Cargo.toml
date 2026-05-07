@@ -1,0 +1,11 @@
+[package]
+name = "embed"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "ONNX-based embedding inference engine for diploma equivalence (future)"
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
