@@ -41,7 +41,7 @@ import unicodedata
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path.home() / "Documents" / "Notes" / "1. Projects" / "Diploma-Equivalence"
 DEFAULT_TXT = Path("/tmp/ufpe-ec-pdfs/ppc-perfil-novo-2024_1.txt")
 OUT_DIR = ROOT / "research" / "ementas" / "ufpe-ec" / "json"
 RAW_DIR = ROOT / "research" / "ementas" / "ufpe-ec" / "raw"

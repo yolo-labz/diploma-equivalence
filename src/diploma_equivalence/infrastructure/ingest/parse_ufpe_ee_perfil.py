@@ -27,7 +27,7 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path.home() / "Documents" / "Notes" / "1. Projects" / "Diploma-Equivalence"
 DEFAULT_TXT = Path("/tmp/ufpe-ee-perfil.txt")
 OUT_DIR = ROOT / "research" / "ementas" / "ufpe-ee" / "json"
 RAW_DIR = ROOT / "research" / "ementas" / "ufpe-ee" / "raw"

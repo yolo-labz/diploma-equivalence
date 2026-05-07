@@ -17,7 +17,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path.home() / "Documents" / "Notes" / "1. Projects" / "Diploma-Equivalence"
 DEFAULT_HTML = Path("/tmp/ufpe-ec-codigos.html")
 OUT_DIR = ROOT / "research" / "ementas" / "ufpe-ec" / "json"
 RAW_DIR = ROOT / "research" / "ementas" / "ufpe-ec" / "raw"
