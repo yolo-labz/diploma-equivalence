@@ -51,8 +51,7 @@ dev = [
 
 [project.scripts]
 diploma-ingest = "diploma_equivalence.infrastructure.ingest.scrape_uc_ementas:main"
-diploma-embed = "diploma_equivalence.application.embed.cli:main"
-diploma-match = "diploma_equivalence.application.match.cli:main"
+diploma-match = "diploma_equivalence.cli:main"
 diploma-serve = "diploma_equivalence.main:main"
 
 [project.urls]

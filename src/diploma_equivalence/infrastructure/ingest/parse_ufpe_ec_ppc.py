@@ -149,6 +149,20 @@ TITLE_BANLIST = {
     "pró-reitoria",
     "pro-reitoria",
     "universidade federal de pernambuco",
+    # Column header fragments that get picked up as title text
+    "nº. de créditos",
+    "no. de creditos",
+    "nº de créditos",
+    "no de creditos",
+    "c. h. global",
+    "ch global",
+    "carga horária semanal",
+    "código nome",
+    "codigo nome",
+    "c.h. global",
+    "período teórica prática",
+    "teórica prática",
+    "tópicos avançados em",
 }
 
 
@@ -417,10 +431,7 @@ def parse_equivalence(text: str) -> dict[str, list[str]]:
                 if m_ch:
                     in_name = True
                     name_buf = []
-                    if codes_on_line:
-                        pending_legacy = codes_on_line
-                    else:
-                        pending_legacy = []
+                    pending_legacy = codes_on_line or []
             continue
 
         # Not a prefix row — could be name continuation or legacy-code-only.
