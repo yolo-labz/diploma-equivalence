@@ -75,10 +75,12 @@ META_LEGACY_BARE_RE = re.compile(
     r"(?:\s+(?P<per>\d+))?\s*$"
 )
 # Sometimes the title DOES sit on the same line (no wrap); keep the "with-title"
-# variants as fallback.
+# variants as fallback. Title may contain digits (e.g. "Cálculo Diferencial e
+# Integral 2") — we delimit it from the number columns by requiring a
+# 2+-space gap followed by a digit.
 META_PREFIX_WITH_TITLE_RE = re.compile(
     r"^\s*(?P<prefix>CIN|DEE|DF|DMAT|DEINFO|DCC|DEL|DEQ|DEM|DEMEC|DEM-E|DLET|DECO)\s+"
-    r"(?P<title>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç][^\d]{3,}?)\s+"
+    r"(?P<title>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç].+?)\s{2,}"
     r"(?:(?P<cht>\d+)\s+)?"
     r"(?:(?P<chp>\d+)\s+)?"
     r"(?:(?P<cred>\d+(?:[.,]\d+)?)\s+)?"
@@ -87,7 +89,7 @@ META_PREFIX_WITH_TITLE_RE = re.compile(
 )
 META_LEGACY_WITH_TITLE_RE = re.compile(
     r"^\s*(?P<code>[A-Z]{2}\d{3,4})\s+"
-    r"(?P<title>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç][^\d]{3,}?)\s+"
+    r"(?P<title>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç].+?)\s{2,}"
     r"(?:(?P<cht>\d+)\s+)?"
     r"(?:(?P<chp>\d+)\s+)?"
     r"(?:(?P<cred>\d+(?:[.,]\d+)?)\s+)?"
@@ -165,6 +167,48 @@ TITLE_BANLIST = {
     "tópicos avançados em",
 }
 
+# Substring fragments that flag a line as a column-header / boilerplate row,
+# regardless of whether the line is an exact match for any TITLE_BANLIST entry.
+# Used by is_title_line() with a normalized-whitespace lowercase comparison so
+# multi-word header rows like
+#   "Código  Nome  Nº. de Créditos  C. H. Global  Período"
+# are rejected even when they don't match any banlist entry verbatim.
+HEADER_FRAGMENTS: tuple[str, ...] = (
+    "código nome",
+    "codigo nome",
+    "nº. de créditos",
+    "no. de creditos",
+    "nº de créditos",
+    "no de creditos",
+    "c. h. global",
+    "c.h. global",
+    "ch global",
+    "carga horária semanal",
+    "carga horária",
+    "carga horaria",
+    "período teórica",
+    "periodo teorica",
+    "teórica prática",
+    "teorica pratica",
+    "pré-requisitos",
+    "pre-requisitos",
+    "co-requisitos",
+    "co-requisito",
+    "requisitos c.h.",
+    "marque um x",
+    "dados do componente",
+    "tipo de componente",
+    "status do componente",
+    "programa de componente",
+    "diretoria de planejamento",
+    "diretoria de desenvolvimento",
+    "pró-reitoria",
+    "pro-reitoria",
+    "universidade federal",
+    "centro de informática",
+    "centro de informatica",
+)
+
 
 @dataclass
 class Discipline:
@@ -193,31 +237,37 @@ def is_title_line(ln: str) -> bool:
     s = ln.strip()
     if not s or len(s) < 3:
         return False
-    if s.lower() in TITLE_BANLIST:
+    s_norm = re.sub(r"\s+", " ", s).lower()
+    if s_norm in TITLE_BANLIST:
+        return False
+    if any(frag in s_norm for frag in HEADER_FRAGMENTS):
         return False
     # Skip pure punctuation / X markers / single letters.
     return bool(TITLE_LINE_RE.match(ln))
 
 
 def collect_title(lines: list[str], meta_idx: int) -> str:
-    """Title may sit on line above, below, or both. Glue them in document order."""
+    """Title may sit on line above, below, or both. Glue them in document order.
+
+    Stops at the first empty line in either direction so that out-of-band
+    rows (column headers above the title block, pré-requisitos rows below
+    the title block) cannot bleed into the title.
+    """
     parts: list[str] = []
-    # Look up to 2 lines above the meta-row.
-    above = []
+    above: list[str] = []
     for j in range(meta_idx - 1, max(meta_idx - 4, -1), -1):
         ln = lines[j]
         if not ln.strip():
-            continue
+            break
         if is_title_line(ln):
             above.append(ln.strip())
             continue
         break
     parts.extend(reversed(above))
-    # Look up to 2 lines below.
     for j in range(meta_idx + 1, min(meta_idx + 4, len(lines))):
         ln = lines[j]
         if not ln.strip():
-            continue
+            break
         if is_title_line(ln):
             parts.append(ln.strip())
             continue
@@ -360,9 +410,7 @@ def parse_equivalence(text: str) -> dict[str, list[str]]:
 
     # CIN/prefix row: prefix, optional name, then CH.
     # Some rows have only prefix+CH (name wraps from later lines).
-    cin_row_ch_only = re.compile(
-        rf"^\s*(?P<prefix>{dept_prefixes})\s+(?P<ch>\d+)(?:\s|$)"
-    )
+    cin_row_ch_only = re.compile(rf"^\s*(?P<prefix>{dept_prefixes})\s+(?P<ch>\d+)(?:\s|$)")
     cin_row_with_name = re.compile(
         rf"^\s*(?P<prefix>{dept_prefixes})\s+"
         r"(?P<name>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç][^\d]{3,}?)\s{2,}"
@@ -414,7 +462,7 @@ def parse_equivalence(text: str) -> dict[str, list[str]]:
                 name_buf.append(m_name.group("name").strip())
                 in_name = True
                 # Legacy codes on same line?
-                tail = ln[m_name.end():]
+                tail = ln[m_name.end() :]
                 tail_codes = code_re.findall(tail)
                 if tail_codes:
                     key = m_name.group("name").strip().lower()
