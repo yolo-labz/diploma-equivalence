@@ -56,16 +56,22 @@ NEXT_SECTION = re.compile(
 STATUS_RE = re.compile(r"\b(OBRIGAT[ÓO]RIO|ELETIVO|OPTATIVO)\b")
 
 # Department prefix (no name on same line). Title is on neighbouring lines.
-# 5–6 numbers: CHt CHp Créd CHg [Período]
+# 1-5 numbers: CHt CHp Créd CHg [Período]. Some fields may be blank (single digit for CH total, etc).
 META_PREFIX_BARE_RE = re.compile(
     r"^\s*(?P<prefix>CIN|DEE|DF|DMAT|DEINFO|DCC|DEL|DEQ|DEM|DEMEC|DEM-E|DLET|DECO)\s+"
-    r"(?P<cht>\d+)\s+(?P<chp>\d+)\s+(?P<cred>\d+(?:[.,]\d+)?)\s+(?P<chg>\d+)"
+    r"(?:(?P<cht>\d+)\s+)?"
+    r"(?:(?P<chp>\d+)\s+)?"
+    r"(?:(?P<cred>\d+(?:[.,]\d+)?)\s+)?"
+    r"(?P<chg>\d+)"
     r"(?:\s+(?P<per>\d+))?\s*$"
 )
 # Legacy code path — same style: code may be alone with numbers, name above/below.
 META_LEGACY_BARE_RE = re.compile(
     r"^\s*(?P<code>[A-Z]{2}\d{3,4})\s+"
-    r"(?P<cht>\d+)\s+(?P<chp>\d+)\s+(?P<cred>\d+(?:[.,]\d+)?)\s+(?P<chg>\d+)"
+    r"(?:(?P<cht>\d+)\s+)?"
+    r"(?:(?P<chp>\d+)\s+)?"
+    r"(?:(?P<cred>\d+(?:[.,]\d+)?)\s+)?"
+    r"(?P<chg>\d+)"
     r"(?:\s+(?P<per>\d+))?\s*$"
 )
 # Sometimes the title DOES sit on the same line (no wrap); keep the "with-title"
@@ -73,13 +79,19 @@ META_LEGACY_BARE_RE = re.compile(
 META_PREFIX_WITH_TITLE_RE = re.compile(
     r"^\s*(?P<prefix>CIN|DEE|DF|DMAT|DEINFO|DCC|DEL|DEQ|DEM|DEMEC|DEM-E|DLET|DECO)\s+"
     r"(?P<title>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç][^\d]{3,}?)\s+"
-    r"(?P<cht>\d+)\s+(?P<chp>\d+)\s+(?P<cred>\d+(?:[.,]\d+)?)\s+(?P<chg>\d+)"
+    r"(?:(?P<cht>\d+)\s+)?"
+    r"(?:(?P<chp>\d+)\s+)?"
+    r"(?:(?P<cred>\d+(?:[.,]\d+)?)\s+)?"
+    r"(?P<chg>\d+)"
     r"(?:\s+(?P<per>\d+))?\s*$"
 )
 META_LEGACY_WITH_TITLE_RE = re.compile(
     r"^\s*(?P<code>[A-Z]{2}\d{3,4})\s+"
     r"(?P<title>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç][^\d]{3,}?)\s+"
-    r"(?P<cht>\d+)\s+(?P<chp>\d+)\s+(?P<cred>\d+(?:[.,]\d+)?)\s+(?P<chg>\d+)"
+    r"(?:(?P<cht>\d+)\s+)?"
+    r"(?:(?P<chp>\d+)\s+)?"
+    r"(?:(?P<cred>\d+(?:[.,]\d+)?)\s+)?"
+    r"(?P<chg>\d+)"
     r"(?:\s+(?P<per>\d+))?\s*$"
 )
 
@@ -280,10 +292,10 @@ def parse(text: str) -> list[Discipline]:
             prefix=prefix,
             title=title,
             type=status,
-            ch_teorica=int(meta.group("cht")),
-            ch_pratica=int(meta.group("chp")),
+            ch_teorica=int(meta.group("cht")) if meta.group("cht") else None,
+            ch_pratica=int(meta.group("chp")) if meta.group("chp") else None,
             ch_total=int(meta.group("chg")),
-            creditos=float(meta.group("cred").replace(",", ".")),
+            creditos=float(meta.group("cred").replace(",", ".")) if meta.group("cred") else None,
             periodo=int(meta.group("per")) if meta.group("per") else None,
             ementa=ementa_text,
             source_line=meta_idx + 1,
@@ -315,75 +327,131 @@ def parse(text: str) -> list[Discipline]:
 def parse_equivalence(text: str) -> dict[str, list[str]]:
     lines = text.splitlines()
     start = end = None
+    # Skip TOC-level ANEXO entries — find the one with actual table content.
     for i, ln in enumerate(lines):
-        if "ANEXO X" in ln and "Equival" in ln:
-            start = i
+        if "QUADRO DE EQUIVALÊNCIA" in ln:
+            start = i - 1  # ANEXO X line is right above
             break
     if start is None:
         return {}
     for i in range(start + 1, len(lines)):
-        if re.match(r"^\s*ANEXO [IVX]+\.", lines[i]):
+        ln = lines[i]
+        if re.match(r"^\s*ANEXO [IVX]+\.", ln) or re.match(r"^\s*TABELA DE EQUIVAL", ln):
             end = i
             break
     end = end or len(lines)
 
     code_re = re.compile(r"\b([A-Z]{2}\d{3,4})\b")
-    # CIN row: starts with prefix, then name (text, no leading digit), then CH.
-    cin_row = re.compile(
-        r"^\s*(?P<prefix>CIN|DEE|DF|DMAT)\s+"
-        r"(?P<name>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç][^\d]+?)\s+"
+    dept_prefixes = r"CIN|DEE|DF|DMAT|DCC|DEL|DEQ|DEM|DEMEC|DEM-E|DLET|DECO|DEINFO"
+
+    # CIN/prefix row: prefix, optional name, then CH.
+    # Some rows have only prefix+CH (name wraps from later lines).
+    cin_row_ch_only = re.compile(
+        rf"^\s*(?P<prefix>{dept_prefixes})\s+(?P<ch>\d+)(?:\s|$)"
+    )
+    cin_row_with_name = re.compile(
+        rf"^\s*(?P<prefix>{dept_prefixes})\s+"
+        r"(?P<name>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç][^\d]{3,}?)\s{2,}"
         r"(?P<ch>\d+)"
     )
-    # Continuation row: indented title fragment, no prefix, may carry a legacy
-    # code further right.
-    cont_row = re.compile(r"^\s+(?P<frag>[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç][^\d]+?)(?:\s+\d|$)")
 
     mapping: dict[str, list[str]] = {}
-    open_names: list[str] = []  # list of new-name keys awaiting a legacy code
+    name_buf: list[str] = []  # accumulating new-perfil name parts
+    pending_legacy: list[str] = []  # legacy codes that need to resolve
+    in_name = False  # whether we're inside a new-perfil name accumulation
 
     for raw in lines[start:end]:
         ln = raw.rstrip()
         if not ln.strip():
+            if in_name and name_buf:
+                name_buf.append(" ")  # blank line = word separator
             continue
-        # 1) Is this a CIN row? Open a new name.
-        m_cin = cin_row.match(ln)
-        if m_cin:
-            name_parts = [m_cin.group("name").strip()]
-            # If the same line ALSO has a legacy code on the right, resolve immediately.
-            tail = ln[m_cin.end() :]
-            tail_codes = code_re.findall(tail)
-            if tail_codes:
-                key = name_parts[0].lower()
-                mapping.setdefault(key, [])
-                for c in tail_codes:
-                    if c not in mapping[key]:
-                        mapping[key].append(c)
+
+        codes_on_line = code_re.findall(ln)
+        has_prefix = bool(re.match(rf"^\s*(?:{dept_prefixes})\s+", ln))
+
+        if has_prefix:
+            # Flush previous entry before opening a new one.
+            if in_name and name_buf:
+                key = " ".join(name_buf).strip()
+                key = re.sub(r"\s+", " ", key).lower()
+                if key and pending_legacy:
+                    mapping.setdefault(key, [])
+                    for c in pending_legacy:
+                        if c not in mapping[key]:
+                            mapping[key].append(c)
+                elif codes_on_line:
+                    # self-contained: name + CH + legacy code on same line
+                    m_name = cin_row_with_name.match(ln)
+                    if m_name and codes_on_line:
+                        key = m_name.group("name").strip().lower()
+                        mapping.setdefault(key, [])
+                        for c in codes_on_line:
+                            if c not in mapping[key]:
+                                mapping[key].append(c)
+
+            name_buf = []
+            pending_legacy = []
+            in_name = False
+
+            # Try name+CH first, then CH-only.
+            m_name = cin_row_with_name.match(ln)
+            if m_name:
+                name_buf.append(m_name.group("name").strip())
+                in_name = True
+                # Legacy codes on same line?
+                tail = ln[m_name.end():]
+                tail_codes = code_re.findall(tail)
+                if tail_codes:
+                    key = m_name.group("name").strip().lower()
+                    mapping.setdefault(key, [])
+                    for c in tail_codes:
+                        if c not in mapping[key]:
+                            mapping[key].append(c)
+                    in_name = False
+                    name_buf = []
+                else:
+                    pending_legacy = []
             else:
-                open_names.append(name_parts[0])
+                m_ch = cin_row_ch_only.match(ln)
+                if m_ch:
+                    in_name = True
+                    name_buf = []
+                    if codes_on_line:
+                        pending_legacy = codes_on_line
+                    else:
+                        pending_legacy = []
             continue
-        # 2) Continuation: maybe extends the most recent open name AND/OR carries
-        # a legacy code that resolves all currently open names.
-        codes = code_re.findall(ln)
-        # Strip the legacy-code half to get the title fragment, if any.
-        # Simpler: use cont_row to grab the fragment if line starts with text.
-        m_cont = cont_row.match(ln)
-        if m_cont and open_names:
-            # Append the continuation fragment to the LAST open name.
-            frag = m_cont.group("frag").strip()
-            # Only append if it's not the legacy-name (legacy-names sit AFTER
-            # the legacy code; if the line matches "<frag> ... <CODE> <name>" the
-            # frag belongs to the new name on the LEFT).
-            # Heuristic: if line's first non-space token is the fragment AND no
-            # CIN/DEE prefix, treat as continuation.
-            open_names[-1] = (open_names[-1] + " " + frag).strip()
-        if codes:
-            for name in open_names:
-                key = name.lower().strip()
-                mapping.setdefault(key, [])
-                for c in codes:
-                    if c not in mapping[key]:
-                        mapping[key].append(c)
-            open_names = []
+
+        # Not a prefix row — could be name continuation or legacy-code-only.
+        if codes_on_line and not has_prefix:
+            if in_name:
+                pending_legacy.extend(codes_on_line)
+            # Legacy-only row potentially flushes everything
+            if pending_legacy:
+                continue
+
+        # Text fragment — accumulate into the current name.
+        if in_name and not codes_on_line:
+            frag = ln.strip().rstrip(".")
+            if frag and re.match(r"^[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç]", frag):
+                name_buf.append(frag)
+        elif in_name and codes_on_line:
+            # line has both text fragment and codes — name continuation
+            frag = ln.strip().rstrip(".")
+            if frag and re.match(r"^[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç]", frag):
+                name_buf.append(frag)
+
+    # Flush last entry.
+    if in_name and name_buf and pending_legacy:
+        key = " ".join(name_buf).strip()
+        key = re.sub(r"\s+", " ", key).lower()
+        if key:
+            mapping.setdefault(key, [])
+            for c in pending_legacy:
+                if c not in mapping[key]:
+                    mapping[key].append(c)
+
     return mapping
 
 
