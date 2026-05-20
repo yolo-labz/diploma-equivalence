@@ -10,7 +10,9 @@ LOG = logging.getLogger(__name__)
 
 
 class SentenceTransformersEmbedder(EmbeddingPort):
-    def __init__(self, model_name: str = "intfloat/multilingual-e5-large", device: str = "cpu") -> None:
+    def __init__(
+        self, model_name: str = "intfloat/multilingual-e5-large", device: str = "cpu"
+    ) -> None:
         self._model_name = model_name
         self._device = device
         self._model = None

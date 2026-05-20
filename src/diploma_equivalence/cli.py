@@ -39,7 +39,9 @@ def _format_report(report: MatchReport, top_n: int = 5) -> str:
     )
     lines.append(f"Generated: {datetime.now(UTC).isoformat()}")
     lines.append(f"Source units: {len(report.matches) + len(report.unmatched_source)}")
-    lines.append(f"Target units: {len({m.target.code for m in report.matches}) + len(report.unmatched_target)}")
+    lines.append(
+        f"Target units: {len({m.target.code for m in report.matches}) + len(report.unmatched_target)}"
+    )
     lines.append(f"Matches (threshold ≥ 0.0): {len(report.matches)}")
     lines.append("")
 
@@ -66,27 +68,38 @@ def _format_report(report: MatchReport, top_n: int = 5) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="diploma-equivalence match pipeline")
     ap.add_argument(
-        "--source", type=_institution, default=Institution.UFPE,
+        "--source",
+        type=_institution,
+        default=Institution.UFPE,
         help="Source institution (UC or UFPE)",
     )
     ap.add_argument(
-        "--target", type=_institution, default=Institution.UC,
+        "--target",
+        type=_institution,
+        default=Institution.UC,
         help="Target institution (UC or UFPE)",
     )
-    ap.add_argument("--model", default="intfloat/multilingual-e5-large", help="sentence-transformers model")
+    ap.add_argument(
+        "--model", default="intfloat/multilingual-e5-large", help="sentence-transformers model"
+    )
     ap.add_argument("--top-k", type=int, default=3, help="candidates per unit")
     ap.add_argument("--threshold", type=float, default=0.0, help="minimum cosine similarity")
     ap.add_argument("--device", default="cpu", help="embedding device (cpu, cuda, mps)")
     ap.add_argument(
-        "--vault", default=None,
+        "--vault",
+        default=None,
         help="path to vault project dir (default: ~/Documents/Notes/1. Projects/Diploma-Equivalence)",
     )
     ap.add_argument(
-        "--output", "-o", default=None,
+        "--output",
+        "-o",
+        default=None,
         help="write report to file (default: stdout)",
     )
     ap.add_argument(
-        "--json", action="store_true", dest="json_output",
+        "--json",
+        action="store_true",
+        dest="json_output",
         help="output raw JSON instead of markdown",
     )
     args = ap.parse_args(argv)
