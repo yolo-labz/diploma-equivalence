@@ -1,0 +1,28 @@
+{
+  "source_institution": "UC",
+  "target_institution": "UFPE",
+  "notes": "SAMPLE / TEMPLATE — replace with real human-decided equivalences. Each pair = a UC (Coimbra) discipline João took -> the UFPE discipline(s) a qualified human (UFPE evaluator, student-validator, or applicant with a granted verdict) deemed equivalent. Codes match the scrape outputs in research/ementas/. Fill `confidence`: granted (real revalidação verdict) > likely (student/expert opinion) > guess. This file is the answer key Test 1 measures the matcher against — its accuracy is the project's critical funding gap.",
+  "pairs": [
+    {
+      "source_code": "8688",
+      "source_title": "Álgebra Linear e Geometria Analítica",
+      "acceptable_target_codes": ["MA046"],
+      "decided_by": "EXAMPLE — replace",
+      "confidence": "guess"
+    },
+    {
+      "source_code": "90680",
+      "source_title": "Segurança em Redes de Comunicações",
+      "acceptable_target_codes": ["IF987"],
+      "decided_by": "EXAMPLE — replace",
+      "confidence": "guess"
+    },
+    {
+      "source_code": "86690",
+      "source_title": "Sistemas de Comunicação Ópticos",
+      "acceptable_target_codes": ["CIN-COM-OPT"],
+      "decided_by": "EXAMPLE — replace",
+      "confidence": "guess"
+    }
+  ]
+}
