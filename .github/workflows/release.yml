@@ -51,6 +51,12 @@ jobs:
       - name: Compute build metadata
         id: meta
         run: |
+          set -euo pipefail
+          # Only publish from a tag or main; refuse a dispatch on any other branch.
+          if [ "$REF_TYPE" != "tag" ] && [ "$REF_NAME" != "main" ]; then
+            echo "::error::release dispatch only allowed on main (got '$REF_NAME')"
+            exit 1
+          fi
           image="$(printf '%s/%s' "$REGISTRY" "$REPO" | tr '[:upper:]' '[:lower:]')"
           if [ "$REF_TYPE" = "tag" ]; then
             version="${REF_NAME#v}"
@@ -86,6 +92,7 @@ jobs:
           # layer timestamps, making the image bytes reproducible across rebuilds.
           SOURCE_DATE_EPOCH: ${{ steps.meta.outputs.epoch }}
         run: |
+          set -euo pipefail
           tags="--tag $IMAGE:$VERSION"
           if [ "$REF_TYPE" = "tag" ]; then
             tags="$tags --tag $IMAGE:latest"
@@ -102,6 +109,10 @@ jobs:
             --metadata-file "$RUNNER_TEMP/build-meta.json" \
             .
           digest="$(jq -r '."containerimage.digest"' "$RUNNER_TEMP/build-meta.json")"
+          if [ -z "$digest" ] || [ "$digest" = "null" ]; then
+            echo "::error::failed to resolve pushed image digest"
+            exit 1
+          fi
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
           echo "ref=$IMAGE@$digest" >> "$GITHUB_OUTPUT"
 
@@ -152,6 +163,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REF: ${{ steps.build.outputs.ref }}
         run: |
+          set -euo pipefail
           for pt in \
             https://slsa.dev/provenance/v1 \
             https://cyclonedx.org/bom \
