@@ -116,26 +116,32 @@ jobs:
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
           echo "ref=$IMAGE@$digest" >> "$GITHUB_OUTPUT"
 
-      - name: Generate CycloneDX SBOM
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
-        with:
-          image: ${{ steps.build.outputs.ref }}
-          format: cyclonedx-json
-          output-file: sbom.cdx.json
-
-      - name: Generate SPDX SBOM
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
-        with:
-          image: ${{ steps.build.outputs.ref }}
-          format: spdx-json
-          output-file: sbom.spdx.json
-
+      # Provenance first — it is independent of the SBOM, so a syft hiccup can
+      # never skip it.
       - name: Attest build provenance
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-name: ${{ steps.meta.outputs.image }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+
+      # SBOM from the source tree (pyproject + uv.lock), NOT a docker export of
+      # the image: the ML image is multi-GB and syft's image export blows the
+      # runner disk ("no space left on device"). Source-scan is robust and is
+      # still attested against the image digest.
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom.spdx.json
 
       # actions/attest-sbom is deprecated; the unified actions/attest takes the
       # SBOM via sbom-path and sets the CycloneDX/SPDX predicate-type itself.
