@@ -1,0 +1,57 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Python build / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.egg-info/
+build/
+dist/
+
+# Virtualenvs (uv builds inside the image; never ship local ones)
+.venv/
+venv/
+env/
+
+# Rust artefacts (Cargo workspace exists for future native crates; not built in Docker)
+target/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Local research data — fetched/parsed at run time, never baked into the image
+research/
+
+# Docs / specs / agent transcripts (vault is the canonical home for these)
+docs/
+specs/
+.claude/
+.aider*
+CLAUDE.md
+HEALTH-SAVE-STATE.md
+
+# CI / dev-only configs not needed at runtime
+.github/
+sonar-project.properties
+.dependabot/
+.devcontainer/
+
+# Test artefacts
+tests/
+*.cov
+coverage.xml
+.hypothesis/
