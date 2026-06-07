@@ -118,7 +118,14 @@ jobs:
 
       # Provenance first — it is independent of the SBOM, so a syft hiccup can
       # never skip it.
+      #
+      # GitHub-native attestation persistence requires a public repo or a paid
+      # org plan; on a private free-org repo it errors ("Feature not available
+      # for the organization"). Gate the attest + verify steps on visibility so
+      # a private release still builds + pushes the image and generates SBOMs;
+      # going public or upgrading the plan re-activates attestation automatically.
       - name: Attest build provenance
+        if: ${{ github.event.repository.visibility == 'public' }}
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-name: ${{ steps.meta.outputs.image }}
@@ -146,6 +153,7 @@ jobs:
       # actions/attest-sbom is deprecated; the unified actions/attest takes the
       # SBOM via sbom-path and sets the CycloneDX/SPDX predicate-type itself.
       - name: Attest SBOM (CycloneDX)
+        if: ${{ github.event.repository.visibility == 'public' }}
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
           subject-name: ${{ steps.meta.outputs.image }}
@@ -154,6 +162,7 @@ jobs:
           push-to-registry: true
 
       - name: Attest SBOM (SPDX)
+        if: ${{ github.event.repository.visibility == 'public' }}
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
           subject-name: ${{ steps.meta.outputs.image }}
@@ -165,6 +174,7 @@ jobs:
       # signer identity = this repo's workflow) against the pushed digest using
       # the job's own GITHUB_TOKEN. Fails loud if any attestation is missing.
       - name: Verify attestations
+        if: ${{ github.event.repository.visibility == 'public' }}
         env:
           GH_TOKEN: ${{ github.token }}
           REF: ${{ steps.build.outputs.ref }}
@@ -178,3 +188,8 @@ jobs:
             gh attestation verify "oci://$REF" --repo "$REPO" --predicate-type "$pt"
             echo "::endgroup::"
           done
+
+      - name: Note attestation skipped (private repo)
+        if: ${{ github.event.repository.visibility != 'public' }}
+        run: |
+          echo "::warning::Release attestation + verification skipped: GitHub-native attestation needs a public repo or a paid org plan; this repo is private on a free org. The image was built, pushed, and CycloneDX + SPDX SBOMs generated. Restore full attestation by making the repo public, upgrading the org plan, or adding cosign keyless signing as a private-repo fallback."
