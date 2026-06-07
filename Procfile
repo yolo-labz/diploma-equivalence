@@ -1,1 +1,1 @@
-web: uv run uvicorn diploma_equivalence.main:create_app --factory --host 0.0.0.0 --port ${PORT:-5000}
+web: uvicorn diploma_equivalence.main:create_app --factory --host 0.0.0.0 --port ${PORT:-5000}
