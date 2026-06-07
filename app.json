@@ -10,13 +10,13 @@
     "web": [
       {
         "type": "startup",
-        "command": "curl -fsS http://localhost:5000/health",
+        "command": ["curl", "-fsS", "http://localhost:5000/health"],
         "attempts": 30,
         "timeout": 5
       },
       {
         "type": "liveness",
-        "command": "curl -fsS http://localhost:5000/health",
+        "command": ["curl", "-fsS", "http://localhost:5000/health"],
         "timeout": 5
       }
     ]
