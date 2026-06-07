@@ -4,7 +4,7 @@ Brazil-Portugal diploma equivalence automation: scrape, embed, match, and
 explain course-unit-to-discipline mappings for the Brazilian regulatory
 equivalence process.
 
-**Live:** (pending Dokku deploy)
+**Live (tailnet):** http://diploma-equivalence.home301server.com.br — deployed on Dokku (`ProxMox.Dokku`), reachable over Tailscale. Public HTTPS (Cloudflare DNS + Let's Encrypt) is intentionally not enabled; like the sibling internal APIs it stays tailnet-only.
 
 ## Architecture
 
