@@ -1,4 +1,0 @@
-# Dokku zero-downtime healthcheck (legacy fallback for app.json).
-# Format: WAIT TIMEOUT ATTEMPTS PATH EXPECTED_OUTPUT
-# https://dokku.com/docs/deployment/zero-downtime-deploys/
-2 5 30 /health "ok"
