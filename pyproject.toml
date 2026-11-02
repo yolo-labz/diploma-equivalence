@@ -42,9 +42,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8,<9",
+    "pytest>=9,<10",
     "pytest-cov>=6,<7",
-    "pytest-asyncio>=0.26,<1",
+    "pytest-asyncio>=1.4,<2",
     "ruff>=0.12,<1",
     "pyright>=1.1.400,<2",
     "httpx-sse>=0.4,<1",
@@ -62,9 +62,9 @@ Repository = "https://github.com/yolo-labz/diploma-equivalence"
 
 [dependency-groups]
 dev = [
-    "pytest>=8,<9",
+    "pytest>=9,<10",
     "pytest-cov>=6,<7",
-    "pytest-asyncio>=0.26,<1",
+    "pytest-asyncio>=1.4,<2",
     "ruff>=0.12,<1",
     "pyright>=1.1.400,<2",
     "httpx-sse>=0.4,<1",
