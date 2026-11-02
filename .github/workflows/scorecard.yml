@@ -1,0 +1,63 @@
+name: Scorecard supply-chain security
+
+# Private repository. Two consequences, both measured on 02/11/2026:
+#   * scorecard-action force-disables publishing when the event payload says the
+#     repo is private (`PublishResults = inputVal && !privateRepo`), so the
+#     OpenSSF public API can never serve a score for this repo — no
+#     `publish_results` value changes that.
+#   * the SARIF upload to code scanning returns HTTP 403 without GitHub Code
+#     Security, so the report is retained as a workflow artifact instead.
+# Same shape as pedro-portfolio-recipes. If this repo ever goes public, flip
+# `publish_results` to true and add the upload-sarif step back.
+
+on:
+  # For the Branch-Protection check.
+  branch_protection_rule:
+  schedule:
+    # Weekly Tuesday 07:00 UTC, same slot as the rest of the fleet.
+    - cron: "0 7 * * 2"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      # Scorecard's GraphQL commit/SAST queries need these in private repos.
+      issues: read
+      pull-requests: read
+      checks: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e # v2.5.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          # Private repo: the action disables publishing on its own.
+          publish_results: false
+
+      - name: Retain Scorecard SARIF
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: scorecard-sarif
+          path: results.sarif
+          if-no-files-found: error
+          retention-days: 14
