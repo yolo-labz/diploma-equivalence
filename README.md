@@ -4,7 +4,8 @@ Brazil-Portugal diploma equivalence automation: scrape, embed, match, and
 explain course-unit-to-discipline mappings for the Brazilian regulatory
 equivalence process.
 
-**Live:** https://diploma-equivalence.home301server.com.br — deployed on Dokku (`ProxMox.Dokku`), public via the Cloudflare tunnel (edge TLS).
+**Live:** self-hosted on Dokku behind a Cloudflare tunnel (edge TLS). The hostname is an operator
+setting, not part of this repo.
 
 ## Architecture
 
@@ -63,7 +64,7 @@ See [`.env.example`](.env.example) for the full reference. Summary:
 | `CORS_ORIGINS` | `*` | Comma-separated allowed origins |
 | `APP_VERSION` / `GIT_SHA` / `BUILD_DATE` | build args | Surfaced at `/version`; set via `docker build --build-arg` (CI does this) |
 | `HF_HOME` | `~/.cache/huggingface` | Embedding-model cache dir; only consumed by the offline match CLI |
-| `DIPLOMA_VAULT_ROOT` | `~/Documents/Notes/1. Projects/Diploma-Equivalence` | Vault location for the offline match CLI |
+| `DIPLOMA_VAULT_ROOT` | `<path to your notes vault>` | Vault location for the offline match CLI |
 | `POSTGRES_DSN` | — | Postgres + pgvector connection string (skeleton — not yet wired) |
 | `QDRANT_URL` | — | Qdrant endpoint (skeleton — not yet wired) |
 
@@ -76,27 +77,27 @@ See [`.env.example`](.env.example) for the full reference. Summary:
 
 The full match service (POST `/match`, GET `/reports/...`) is intentionally
 not yet exposed on the HTTP surface — the offline CLI (`python -m
-diploma_equivalence.cli`) is the canonical batch path while Joao's
+diploma_equivalence.cli`) is the canonical batch path while the human
 calibration loop is open.
 
 ## Deploy (Dokku)
 
 The image is built from `Dockerfile.dokku`. CI (`docker-build.yml`)
 verifies the build and the `/health` + `/version` smoke endpoints on
-every PR. Pedro pushes to Dokku from his laptop:
+every PR. Deploys are pushed from an operator machine:
 
 ```bash
 # One-time on the Dokku host
-ssh dokku@dokku.home301server.com.br -- apps:create diploma-equivalence
-ssh dokku@dokku.home301server.com.br -- domains:add diploma-equivalence \
-    diploma-equivalence.home301server.com.br
-ssh dokku@dokku.home301server.com.br -- letsencrypt:enable diploma-equivalence
-ssh dokku@dokku.home301server.com.br -- builder-dockerfile:set diploma-equivalence dockerfile-path Dockerfile.dokku
-ssh dokku@dokku.home301server.com.br -- config:set diploma-equivalence \
-    CORS_ORIGINS="https://diploma-equivalence.home301server.com.br"
+ssh dokku@<dokku-host> -- apps:create diploma-equivalence
+ssh dokku@<dokku-host> -- domains:add diploma-equivalence \
+    diploma-equivalence.example.com
+ssh dokku@<dokku-host> -- letsencrypt:enable diploma-equivalence
+ssh dokku@<dokku-host> -- builder-dockerfile:set diploma-equivalence dockerfile-path Dockerfile.dokku
+ssh dokku@<dokku-host> -- config:set diploma-equivalence \
+    CORS_ORIGINS="https://diploma-equivalence.example.com"
 
 # From this repo
-git remote add dokku dokku@dokku.home301server.com.br:diploma-equivalence
+git remote add dokku dokku@<dokku-host>:diploma-equivalence
 git push dokku main
 ```
 

@@ -66,7 +66,7 @@ def _ufpe(code: str, title: str) -> CourseUnit:
 
 @pytest.fixture
 def units() -> tuple[list[CourseUnit], list[CourseUnit]]:
-    source = [  # UC (João's Coimbra degree)
+    source = [  # UC (the applicant's Coimbra degree)
         _uc("8688", "algebra linear geometria"),
         _uc("90680", "redes seguranca comunicacoes"),
         _uc("86690", "comunicacoes opticas sistemas"),

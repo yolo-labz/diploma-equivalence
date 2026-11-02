@@ -58,7 +58,7 @@ LOG = logging.getLogger("scrape_uc_ementas")
 
 USER_AGENT = (
     "DiplomaEquivalenceDiscovery/0.1 "
-    "(+https://github.com/phsb5321/Notes; pedro@home301server.com.br) "
+    "(+https://github.com/yolo-labz/diploma-equivalence) "
     "research-scraper"
 )
 
