@@ -1,12 +1,12 @@
 """Ground-truth schema + loader for the equivalence-matcher validation.
 
 A ground-truth file is the human-decided answer key: for each SOURCE course unit
-(e.g. a Universidade de Coimbra discipline João took), which TARGET course unit(s)
+(e.g. a Universidade de Coimbra discipline the applicant took), which TARGET course unit(s)
 (e.g. UFPE disciplines) a qualified human evaluator deemed equivalent.
 
 This is exactly the data Test 1 needs and is currently the project's critical gap
 (the matcher runs, but its accuracy is unmeasured against real revalidação outcomes).
-Collect it from: João's own revalidação verdict (n=1), CITi-recruited UFPE Eng
+Collect it from: the applicant's own revalidação verdict (n=1), CITi-recruited UFPE Eng
 students (cohort B), and any real cases surfaced via the UFPE secretariat.
 
 JSON format (see ``testdata/eval/ground-truth.sample.json``)::

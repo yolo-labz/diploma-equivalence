@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--vault",
         default=None,
-        help="path to vault project dir (default: ~/Documents/Notes/1. Projects/Diploma-Equivalence)",
+        help="path to vault project dir (default: the DIPLOMA_VAULT_ROOT setting)",
     )
     ap.add_argument(
         "--output",
