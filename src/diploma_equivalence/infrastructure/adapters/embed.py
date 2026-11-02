@@ -24,7 +24,13 @@ class SentenceTransformersEmbedder(EmbeddingPort):
 
         LOG.info("loading %s on %s ...", self._model_name, self._device)
         self._model = SentenceTransformer(self._model_name, device=self._device)
-        self._dimension = self._model.get_sentence_embedding_dimension()
+        # sentence-transformers 5 renamed this to get_embedding_dimension. The declared
+        # floor is >=3.4, which only has the old name, so detect the method instead of
+        # pinning the dependency upward (or calling the deprecated alias on every load).
+        get_dimension = getattr(self._model, "get_embedding_dimension", None)
+        if get_dimension is None:
+            get_dimension = self._model.get_sentence_embedding_dimension
+        self._dimension = get_dimension()
         LOG.info("loaded. dim=%d", self._dimension)
 
     @property
