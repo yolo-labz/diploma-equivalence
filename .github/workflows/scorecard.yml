@@ -1,14 +1,10 @@
 name: Scorecard supply-chain security
 
-# Private repository. Two consequences, both measured on 02/11/2026:
-#   * scorecard-action force-disables publishing when the event payload says the
-#     repo is private (`PublishResults = inputVal && !privateRepo`), so the
-#     OpenSSF public API can never serve a score for this repo — no
-#     `publish_results` value changes that.
-#   * the SARIF upload to code scanning returns HTTP 403 without GitHub Code
-#     Security, so the report is retained as a workflow artifact instead.
-# Same shape as pedro-portfolio-recipes. If this repo ever goes public, flip
-# `publish_results` to true and add the upload-sarif step back.
+# Public repository: results are published to the OpenSSF API
+# (api.securityscorecards.dev) and the SARIF goes to code scanning.
+# Publishing restricts the job to the scorecard-action allowlist
+# (checkout, harden-runner, upload-artifact, codeql upload-sarif) and to
+# write permissions limited to id-token + security-events.
 
 on:
   # For the Branch-Protection check.
@@ -30,10 +26,10 @@ jobs:
     permissions:
       contents: read
       actions: read
-      # Scorecard's GraphQL commit/SAST queries need these in private repos.
-      issues: read
-      pull-requests: read
-      checks: read
+      # Upload the SARIF to code scanning.
+      security-events: write
+      # Sigstore OIDC, required to publish results.
+      id-token: write
     steps:
       - name: Harden the runner
         uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
@@ -50,8 +46,7 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          # Private repo: the action disables publishing on its own.
-          publish_results: false
+          publish_results: true
 
       - name: Retain Scorecard SARIF
         if: ${{ !cancelled() }}
@@ -61,3 +56,8 @@ jobs:
           path: results.sarif
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload to code scanning
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: results.sarif
