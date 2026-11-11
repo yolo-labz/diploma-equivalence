@@ -49,6 +49,12 @@ updates:
       minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    ignore:
+      # The interpreter is 3.12 everywhere (CI, ruff, pyright, mypy). A newer base
+      # image is a migration, not a weekly bump: python:3.15-slim failed to build
+      # in #59 because psycopg-binary 3.3.4 and torch 2.13.0 ship no cp315 wheels.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-minor"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
