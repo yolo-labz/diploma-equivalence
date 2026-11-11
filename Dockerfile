@@ -1,7 +1,7 @@
 # Diploma Equivalence — Automation Service
 # Brazil-Portugal course unit to discipline matching.
 
-FROM python:3.12-slim AS builder
+FROM python:3.15-slim AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -26,7 +26,7 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
