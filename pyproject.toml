@@ -35,7 +35,7 @@ dependencies = [
     "pydantic>=2.11,<3",
     "pydantic-settings>=2.8,<3",
     "structlog>=25,<27",
-    "sentence-transformers>=3.4,<6",
+    "sentence-transformers>=3.4,<7",
     "psycopg[binary]>=3.2,<4",
     "pgvector>=0.4,<1",
 ]
