@@ -61,6 +61,11 @@ Homepage = "https://github.com/yolo-labz/diploma-equivalence"
 Repository = "https://github.com/yolo-labz/diploma-equivalence"
 
 [dependency-groups]
+# Fuzzing only (`uv sync --only-group fuzz`): atheris ships libFuzzer wheels for Linux.
+fuzz = [
+    "atheris==3.1.0; sys_platform == 'linux'",
+    "requests>=2.32,<3", # imported by scrape_uc_ementas; keeps the fuzz env free of torch
+]
 dev = [
     "pytest>=9,<10",
     "pytest-cov>=6,<8",
@@ -107,6 +112,7 @@ known-first-party = ["diploma_equivalence"]
 "src/diploma_equivalence/infrastructure/ingest/*.py" = ["RUF001", "RUF003"]
 
 [tool.pyright]
+ignore = ["fuzz"] # atheris is only installed in the fuzz group
 typeCheckingMode = "basic"
 pythonVersion = "3.12"
 reportUnknownMemberType = false
