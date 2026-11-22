@@ -15,10 +15,10 @@ ports (domain) ← adapters (infrastructure) ← services (application) ← API 
 
 | Layer | Concern |
 |---|---|
-| `domain/models.py` | CourseUnit, MatchResult — what the system IS |
-| `domain/models.py` (Protocols) | EmbeddingPort, VectorStorePort, IngestPort — contract interfaces |
-| `application/embed/` | EmbeddingService — orchestrate vector generation |
-| `application/match/` | MatchService — nearest-neighbor equivalence scoring |
+| `domain/models.py` | CourseUnit, MatchResult: what the system IS |
+| `domain/models.py` (Protocols) | EmbeddingPort, VectorStorePort, IngestPort: contract interfaces |
+| `application/embed/` | EmbeddingService: orchestrate vector generation |
+| `application/match/` | MatchService: nearest-neighbor equivalence scoring |
 | `infrastructure/ingest/` | Scrapers and parsers for UC + UFPE ementas |
 | `api/routes/` | FastAPI REST endpoints |
 
@@ -60,23 +60,23 @@ See [`.env.example`](.env.example) for the full reference. Summary:
 
 | Variable | Default | Notes |
 |---|---|---|
-| `PORT` | `5000` | HTTP listen port — Dokku injects this automatically |
+| `PORT` | `5000` | HTTP listen port: Dokku injects this automatically |
 | `CORS_ORIGINS` | `*` | Comma-separated allowed origins |
 | `APP_VERSION` / `GIT_SHA` / `BUILD_DATE` | build args | Surfaced at `/version`; set via `docker build --build-arg` (CI does this) |
 | `HF_HOME` | `~/.cache/huggingface` | Embedding-model cache dir; only consumed by the offline match CLI |
 | `DIPLOMA_VAULT_ROOT` | `<path to your notes vault>` | Vault location for the offline match CLI |
-| `POSTGRES_DSN` | — | Postgres + pgvector connection string (skeleton — not yet wired) |
-| `QDRANT_URL` | — | Qdrant endpoint (skeleton — not yet wired) |
+| `POSTGRES_DSN` | - | Postgres + pgvector connection string (skeleton: not yet wired) |
+| `QDRANT_URL` | - | Qdrant endpoint (skeleton: not yet wired) |
 
 ## API Endpoints
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/health` | Liveness probe — used by Dokku `app.json` and the container `HEALTHCHECK` |
+| `GET` | `/health` | Liveness probe: used by Dokku `app.json` and the container `HEALTHCHECK` |
 | `GET` | `/version` | Reports `APP_VERSION`, `GIT_SHA`, `BUILD_DATE` injected at image build time |
 
 The full match service (POST `/match`, GET `/reports/...`) is intentionally
-not yet exposed on the HTTP surface — the offline CLI (`python -m
+not yet exposed on the HTTP surface, the offline CLI (`python -m
 diploma_equivalence.cli`) is the canonical batch path while the human
 calibration loop is open.
 
@@ -105,12 +105,12 @@ Health probe + zero-downtime gate:
 
 | Source | Mechanism |
 |---|---|
-| `app.json` `healthchecks` | Modern Dokku — runs `curl -fsS /health` 30× during deploy, fails if unhealthy |
-| `CHECKS` | Legacy Dokku fallback — same probe, plain-text format |
-| `HEALTHCHECK` in Dockerfile | Container-runtime probe — also surfaces via `docker ps` |
+| `app.json` `healthchecks` | Modern Dokku: runs `curl -fsS /health` 30× during deploy, fails if unhealthy |
+| `CHECKS` | Legacy Dokku fallback: same probe, plain-text format |
+| `HEALTHCHECK` in Dockerfile | Container-runtime probe: also surfaces via `docker ps` |
 
 All three target the same `/health` endpoint to avoid drift.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
